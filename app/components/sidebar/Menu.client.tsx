@@ -1,10 +1,12 @@
 import { motion, type Variants } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import { useStore } from '@nanostores/react';
 import { Dialog, DialogButton, DialogDescription, DialogRoot, DialogTitle } from '~/components/ui/Dialog';
 import { IconButton } from '~/components/ui/IconButton';
 import { ThemeSwitch } from '~/components/ui/ThemeSwitch';
 import { db, deleteById, getAll, chatId, type ChatHistoryItem } from '~/lib/persistence';
+import { envStore, setEnvVariables } from '~/lib/stores/env';
 import { cubicEasingFn } from '~/utils/easings';
 import { logger } from '~/utils/logger';
 import { HistoryItem } from './HistoryItem';
@@ -38,6 +40,8 @@ export function Menu() {
   const [list, setList] = useState<ChatHistoryItem[]>([]);
   const [open, setOpen] = useState(false);
   const [dialogContent, setDialogContent] = useState<DialogContent>(null);
+  const [showEnv, setShowEnv] = useState(false);
+  const envString = useStore(envStore);
 
   const loadEntries = useCallback(() => {
     if (db) {
@@ -70,6 +74,15 @@ export function Menu() {
 
   const closeDialog = () => {
     setDialogContent(null);
+  };
+
+  const handleEnvChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    try {
+      await setEnvVariables(e.target.value);
+    } catch (error) {
+      toast.error('Failed to update environment variables');
+      console.error(error);
+    }
   };
 
   useEffect(() => {
@@ -162,6 +175,26 @@ export function Menu() {
               )}
             </Dialog>
           </DialogRoot>
+        </div>
+        <div className="border-t border-bolt-elements-borderColor">
+          <button
+            className="w-full flex items-center gap-2 px-4 py-2 text-bolt-elements-textPrimary hover:bg-bolt-elements-sidebar-buttonBackgroundHover transition-theme"
+            onClick={() => setShowEnv(!showEnv)}
+          >
+            <div className="i-ph:gear-six-duotone shrink-0" />
+            Environment Variables
+            <div className={`i-ph:caret-${showEnv ? 'up' : 'down'} ml-auto`} />
+          </button>
+          {showEnv && (
+            <div className="p-4 border-t border-bolt-elements-borderColor">
+              <textarea
+                className="w-full h-32 p-2 text-sm font-mono bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary border border-bolt-elements-borderColor rounded-md resize-none"
+                placeholder="key1=value1&#10;key2=value2&#10;..."
+                value={envString}
+                onChange={handleEnvChange}
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center border-t border-bolt-elements-borderColor p-4">
           <ThemeSwitch className="ml-auto" />

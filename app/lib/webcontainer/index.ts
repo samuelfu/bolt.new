@@ -1,5 +1,6 @@
 import { WebContainer } from '@webcontainer/api';
 import { WORK_DIR_NAME } from '~/utils/constants';
+import { getEnvVariables } from '~/lib/stores/env';
 
 interface WebContainerContext {
   loaded: boolean;
@@ -24,8 +25,19 @@ if (!import.meta.env.SSR) {
       .then(() => {
         return WebContainer.boot({ workdirName: WORK_DIR_NAME });
       })
-      .then((webcontainer) => {
+      .then(async (webcontainer) => {
         webcontainerContext.loaded = true;
+        
+        // Write environment variables to .env file
+        const envString = getEnvVariables();
+        if (envString) {
+          try {
+            await webcontainer.fs.writeFile('.env', envString);
+          } catch (error) {
+            console.error('Failed to write .env file:', error);
+          }
+        }
+        
         return webcontainer;
       });
 
